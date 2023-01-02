@@ -60,6 +60,7 @@ jobs:
         id: create_release
         uses: ncipollo/release-action@v1
         with:
+          name: EarthshakerNinjasData
           tag: release-${{ github.event.issue.id }}
           artifacts: "*.lua,*.toc"     
 
