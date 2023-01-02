@@ -1,1 +1,1 @@
-ESN_DATA_SHITLIST = { "test5","test6" };
+ESN_DATA_SHITLIST = { "test5","test6","test7" };
