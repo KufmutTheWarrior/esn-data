@@ -44,7 +44,7 @@ jobs:
               fi
           done
           
-          echo "ESN_DATA_SHITLIST = { $out };" > "$GITHUB_WORKSPACE/EarthshakerNinjasData/EarthshakerNinjasData.lua"
+          echo "ESN_DATA_SHITLIST = { $out };" > "$GITHUB_WORKSPACE/EarthshakerNinjasData.lua"
           
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
