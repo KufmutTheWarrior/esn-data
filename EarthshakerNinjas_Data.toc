@@ -1,0 +1,9 @@
+## Interface: 30400
+## Version: 0.0.4
+## Title: EarthshakerNinjasData
+## Author: Kufmut-Earthshaker/Küfmut-Earthshaker
+## SavedVariables: ESNinjaDB
+## DefaultState: enabled
+## Dependencies: EarthshakerNinjas
+## LoadOnDemand: 1
+EarthshakerNinjas_Data.lua
