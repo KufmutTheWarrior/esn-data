@@ -1,0 +1,79 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  issues:
+    types: [ "opened" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    if: "${{ github.event.issue.body != '' }}"
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          #!/bin/bash          
+          fname="$GITHUB_WORKSPACE/EsnList.txt"
+          echo -e "\n${{ github.event.issue.body }}" >> $fname
+          shitlist=()         
+          cmd="shitlist=($(cat $fname))"
+          IFS=$'\r\n' GLOBIGNORE='*' command eval "$cmd" 
+          out=""
+          for s in ${shitlist[@]}
+          do
+              t="$out\"$s\""
+              if [[ $s == ${shitlist[-1]} ]];
+              then 
+                  out="$t"
+              else 
+                  out="$t,"
+              fi
+          done
+          
+          echo "ESN_DATA_SHITLIST = { $out };" > "$GITHUB_WORKSPACE/EarthshakerNinjasData/EarthshakerNinjasData.lua"
+          
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Updated list"
+          
+      - uses: peter-evans/close-issue@v2
+        with:
+          comment: |
+            Issue has been handled successfully and the code has been updated by GitHub Action
+            Auto-closing this issue.      
+            
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: release-${{ github.event.issue.id }}
+          release_name: release-${{ github.event.issue.id }}
+          body: |
+            release-${{ github.event.issue.id }}
+          draft: false
+          prerelease: false
+
+      - name: Remove asset
+        uses: flcdrg/remove-release-asset-action@v1
+        id: remove
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            release_id: release-${{ github.event.issue.id }}
+            asset_name: .gitignore
