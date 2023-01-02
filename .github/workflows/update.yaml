@@ -58,16 +58,9 @@ jobs:
             
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: release-${{ github.event.issue.id }}
-          release_name: EarthshakerNinjasData
-          body: |
-            release-${{ github.event.issue.id }}
-          draft: false
-          prerelease: false
+          artifacts: "*.lua,*.toc"     
 
       - name: Remove asset
         uses: flcdrg/remove-release-asset-action@v1
