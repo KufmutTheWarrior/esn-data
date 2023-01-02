@@ -60,6 +60,7 @@ jobs:
         id: create_release
         uses: ncipollo/release-action@v1
         with:
+          tag: release-${{ github.event.issue.id }}
           artifacts: "*.lua,*.toc"     
 
       - name: Remove asset
