@@ -66,6 +66,10 @@ jobs:
           exclude: '.^'               # Optional, defaults to '.^'
           encoding: 'utf8'            # Optional, defaults to 'utf8'
           path: '.'                   # Optional, defaults to '.' 
+               
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Updated release version"
           
       - name: Create Release
         id: create_release
