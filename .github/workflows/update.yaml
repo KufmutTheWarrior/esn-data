@@ -66,3 +66,4 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Updated release version and list"
+          tagging_message: release-${{ github.run_number }}
