@@ -46,10 +46,6 @@ jobs:
           
           echo "ESN_DATA_SHITLIST = { $out };" > "$GITHUB_WORKSPACE/EarthshakerNinjasData.lua"
           
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "Updated list"
-          
       - uses: peter-evans/close-issue@v2
         with:
           comment: |
@@ -69,12 +65,4 @@ jobs:
                
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "Updated release version"
-          
-      - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@v1
-        with:
-          name: EarthshakerNinjasData
-          tag: release-${{ github.event.issue.id }}
-          artifacts: "*.lua,*.toc"     
+          commit_message: "Updated release version and list"
