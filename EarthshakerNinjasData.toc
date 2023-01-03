@@ -6,4 +6,4 @@
 ## DefaultState: enabled
 ## Dependencies: EarthshakerNinjas
 ## LoadOnDemand: 1
-EarthshakerNinjas_Data.lua
+EarthshakerNinjasData.lua
