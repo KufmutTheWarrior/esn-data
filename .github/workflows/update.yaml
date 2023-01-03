@@ -30,9 +30,9 @@ jobs:
           data=$(head -n 1 ./EarthshakerNinjasData.lua)
           if [[ ${data} == "ESN_DATA_SHITLIST = {};" ]];
           then
-              out="${data:0:${#data}-2}\"${{ github.event.issue.body }\"};"
+              out="${data:0:${#data}-2}\"${{ github.event.issue.body }}\"};"
           else
-              out="${data:0:${#data}-2},\"${{ github.event.issue.body }\"};"
+              out="${data:0:${#data}-2},\"${{ github.event.issue.body }}\"};"
           fi
           echo $out > "./EarthshakerNinjasData.lua"
                     
