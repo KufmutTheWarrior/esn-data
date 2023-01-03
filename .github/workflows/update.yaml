@@ -27,7 +27,7 @@ jobs:
       - name: Run a multi-line script
         run: |          
           #!/bin/bash          
-          data=$(head -n 1 $GITHUB_WORKSPACE/EarthshakerNinjasData.lua)
+          data=$(head -n 1 $GITHUB_WORKSPACE/EarthshakerNinjasData/EarthshakerNinjasData.lua)
           if [[ ${data} == "ESN_DATA_SHITLIST = {};" ]];
           then
               out="${data:0:${#data}-2}\"${{ github.event.issue.body }}\"};"
