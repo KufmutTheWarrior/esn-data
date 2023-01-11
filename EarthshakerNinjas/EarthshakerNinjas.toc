@@ -3,6 +3,5 @@
 ## Title: EarthshakerNinjas
 ## Author: Kufmut-Earthshaker/Küfmut-Earthshaker
 ## SavedVariables: ESNinjaDB
-## Dependencies: EarthshakerNinjasData
 ## DefaultState: enabled
 EarthshakerNinjas.lua
