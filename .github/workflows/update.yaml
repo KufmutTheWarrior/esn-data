@@ -48,6 +48,17 @@ jobs:
           regex: 'Version: ([0-9\.]*)'
           replacement: 'Version: 0.0.${{ github.run_number }}'
           flags: "g"                  # Optional, defaults to "g"
+          include: 'EarthshakerNinjas.toc'    # Optional, defaults to ".*"
+          exclude: '.^'               # Optional, defaults to '.^'
+          encoding: 'utf8'            # Optional, defaults to 'utf8'
+          path: '.'                   # Optional, defaults to '.' 
+      
+      - name: Modify version number
+        uses: mingjun97/file-regex-replace@v1
+        with:
+          regex: 'Version: ([0-9\.]*)'
+          replacement: 'Version: 0.0.${{ github.run_number }}'
+          flags: "g"                  # Optional, defaults to "g"
           include: 'EarthshakerNinjasData.toc'    # Optional, defaults to ".*"
           exclude: '.^'               # Optional, defaults to '.^'
           encoding: 'utf8'            # Optional, defaults to 'utf8'
