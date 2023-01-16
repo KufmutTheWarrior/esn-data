@@ -4,7 +4,7 @@ local ninjaText = "NINJA"
 local ninjaAlertMsg = "ES Ninja Warning: '$shitter$' is in this group."
 local alertedFor = {}
 local shitlist = {}
-
+local _, EarthshakerNinjasData = ...
 function Log(text)
     if debug then print("DEBUG " .. date('%T') .. ": " .. text) end
 end
@@ -130,7 +130,6 @@ function ModifyCustomShitlist(names)
         end
     end
 
-    
     if table.getn(splitNames) > 0 then 
         ESNinjaDB.customShitlist = splitNames
     end
@@ -142,7 +141,6 @@ function frame:InitializeOptions()
 	self.panel.name = "ES Ninjas"
     ESNinjaDB.defaultShitlist = shitlist
     if not ESNinjaDB.customShitlist and not ESNinjaDB.customShitlist == {} then        
-        Log("No default shitlist found, creating one")
         ESNinjaDB.customShitlist = self.defaults.customShitlist
     end
 
@@ -188,21 +186,19 @@ function frame:InitializeOptions()
         KethoEditBox_Show(GetNamesForEditShitlistText(), "Enter one name per line")
     end)
 
-	InterfaceOptions_AddCategory(self.panel)    
-	
-	local addonLoaded = LoadAddOn("EarthshakerNinjasData");
-    if not addonLoaded or not ESN_DATA_SHITLIST then
-        return
+	InterfaceOptions_AddCategory(self.panel)
+    if not EarthshakerNinjasData.ESN_DATA_SHITLIST then
+        shitlist = {};
     else
-        shitlist = ESN_DATA_SHITLIST
+        shitlist = EarthshakerNinjasData.ESN_DATA_SHITLIST
     end
 end
 
 -- Sets tooltip line
 function OnTooltipSetUnit(unit)
 	if not ESNinjaDB.tooltipEnabled then return end
-    local unitName, _ = unit:GetUnit()
-    if tablefind(shitlist, unitName) then
+    local _, u = unit:GetUnit()
+    if isInAnyShitlist(u) then
         GameTooltip:AddLine(ninjaText, 1, 0, 0)
         GameTooltip:Show()        
     end
@@ -216,6 +212,27 @@ function tablefind(tab,el)
     end
 end
 
+function isInAnyShitlist(unitID)
+    return tablefind(shitlist, UnitName(unitID)) or tablefind(ESNinjaDB.customShitlist, UnitName(unitID))
+end
+
+function createFrameForNameplate(nameplate)
+    if not nameplate.frame then
+        nameplate.frame = CreateFrame("Frame", nil, nameplate)
+        nameplate.frame:SetWidth(10)
+        nameplate.frame:SetHeight(10)
+        nameplate.frame:SetAlpha(1)
+        nameplate.frame:SetPoint("CENTER",0,25)
+        nameplate.frame.text = nameplate.frame:CreateFontString(nil,"ARTWORK")
+	    nameplate.frame.text:SetFont("Fonts\\ARIALN.ttf", 13, "OUTLINE")
+	    nameplate.frame.text:SetPoint("CENTER",0,0)
+	    nameplate.frame.text:SetText(ninjaText)
+	    nameplate.frame.text:SetTextColor(1, 0, 0)
+    end
+    nameplate.frame:Show()
+end
+
+
 frame:SetScript("OnEvent", function(self, event, ...)
 if event == "ADDON_LOADED" then
 	local addonName = ...
@@ -228,23 +245,9 @@ if event == "ADDON_LOADED" then
 elseif event == "NAME_PLATE_UNIT_ADDED" then
     if not ESNinjaDB.nameplatesEnabled then return end
     local unitID = ...
-    if tablefind(shitlist, UnitName(unitID)) then
+    if isInAnyShitlist(unitID) then
         local nameplate = C_NamePlate.GetNamePlateForUnit(unitID)
-        if nameplate then
-            if not nameplate.frame then
-                nameplate.frame = CreateFrame("Frame", nil, nameplate)
-                nameplate.frame:SetWidth(10)
-                nameplate.frame:SetHeight(10)
-                nameplate.frame:SetAlpha(1)
-                nameplate.frame:SetPoint("CENTER",0,25)
-                nameplate.frame.text = nameplate.frame:CreateFontString(nil,"ARTWORK")
-			    nameplate.frame.text:SetFont("Fonts\\ARIALN.ttf", 13, "OUTLINE")
-			    nameplate.frame.text:SetPoint("CENTER",0,0)
-			    nameplate.frame.text:SetText(ninjaText)
-			    nameplate.frame.text:SetTextColor(1, 0, 0)
-            end
-		    nameplate.frame:Show()
-        end
+        createFrameForNameplate(nameplate)
     end
 
 elseif event == "NAME_PLATE_UNIT_REMOVED" then
@@ -275,9 +278,10 @@ elseif event == "GROUP_ROSTER_UPDATE" then
     	local unitID = "" .. unit .. i .. ""
         local unitName = UnitName(unitID)
         if unitName then 
-        	table.insert(localRoster, unitName)
-    		-- unit in shitlist?
-        	if tablefind(shitlist, unitName) then
+            -- add to local roster if not already present
+            if not tablefind(localRoster, unitName) then table.insert(localRoster, unitName) end
+
+        	if isInAnyShitlist(unitID) then
         		if not tablefind(alertedFor, unitName) then 
         			local msg = ninjaAlertMsg:gsub("%$shitter%$", unitName)
         			if ESNinjaDB.soundEnabled then PlaySound(8959, "Master") end
@@ -288,11 +292,17 @@ elseif event == "GROUP_ROSTER_UPDATE" then
     	end
     end
 
+    -- clear name from alerts when ninja has left raid/group
     for j=1, table.getn(alertedFor) do
     	local alertedName = alertedFor[j]
     	if not tablefind(localRoster, alertedName) then
     		table.remove(alertedFor, j)
     	end
+    end
+
+    -- clear all when player leaves group
+    if not IsInGroup() then
+        alertedFor = {}
     end
 end
 end)
