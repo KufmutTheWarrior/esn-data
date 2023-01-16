@@ -1,1 +1,1 @@
-ESN_DATA_SHITLIST = {};
+ESN_DATA_SHITLIST = {"Hororr"};
