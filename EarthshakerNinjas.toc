@@ -1,5 +1,5 @@
 ## Interface: 30400
-## Version: 0.0.37
+## Version: 0.0.38
 ## Title: EarthshakerNinjas
 ## Author: Kufmut-Earthshaker/Küfmut-Earthshaker
 ## SavedVariables: ESNinjaDB

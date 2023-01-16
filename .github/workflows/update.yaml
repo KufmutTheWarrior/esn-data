@@ -28,7 +28,7 @@ jobs:
         run: |          
           #!/bin/bash          
           data=$(head -n 1 $GITHUB_WORKSPACE/EarthshakerNinjasData.lua)
-          if [[ ${data} == "ESN_DATA_SHITLIST = {};" ]];
+          if [[ ${data} == "local _, addon=...;addon.ESN_DATA_SHITLIST = {};" ]];
           then
               out="${data:0:${#data}-2}\"${{ github.event.issue.body }}\"};"
           else
