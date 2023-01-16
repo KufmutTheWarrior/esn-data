@@ -5,4 +5,5 @@
 ## SavedVariables: ESNinjaDB
 ## DefaultState: enabled
 ## LoadOnDemand: 1
+## Dependencies: EarthshakerNinjas
 EarthshakerNinjasData.lua
