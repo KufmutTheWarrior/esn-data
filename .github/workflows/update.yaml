@@ -20,6 +20,8 @@ jobs:
     if: "${{ github.event.issue.body != '' }}"
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: View PR author
+        run: echo "This PR is opened by ${{ github.event.pull_request.user.login }} ."
       - name: cancel action
         uses: andymckay/cancel-action@0.2
         if: ${{ github.event.issue.actor }} != "KufmutTheWarrior"
