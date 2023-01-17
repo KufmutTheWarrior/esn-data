@@ -20,6 +20,10 @@ jobs:
     if: "${{ github.event.issue.body != '' }}"
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: cancel action
+        uses: andymckay/cancel-action@0.2
+        if: ${{ github.event.issue.actor }} != "KufmutTheWarrior"
+        
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
