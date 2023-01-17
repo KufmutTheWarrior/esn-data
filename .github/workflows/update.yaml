@@ -25,7 +25,7 @@ jobs:
         
       - name: cancel action
         uses: andymckay/cancel-action@0.2
-        if: ${{ github.actor }} != "KufmutTheWarrior"
+        if: ${{ github.actor != "KufmutTheWarrior" }}
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
