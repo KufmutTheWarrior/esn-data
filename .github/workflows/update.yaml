@@ -21,10 +21,11 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: View issue author
-        run: echo "This issue is opened by ${{ github.event.issue.actor.login }} ."
+        run: echo "This issue is opened by ${{ github.actor }} ."
+        
       - name: cancel action
         uses: andymckay/cancel-action@0.2
-        if: ${{ github.event.issue.actor }} != "KufmutTheWarrior"
+        if: ${{ github.actor }} != "KufmutTheWarrior"
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
