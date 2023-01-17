@@ -345,13 +345,13 @@ function frame:InitializeOptions()
     ninjaEditBox.Label:SetJustifyH("RIGHT")
     ninjaEditBox.Label:SetPoint("TOPLEFT", 3, 13)
     ninjaEditBox.Label:SetText("Custom Ninja text")
-    
+
     ninjaEditBox:SetScript("OnEnterPressed", function()
         ninjaEditBox:ClearFocus()
         local text = ninjaEditBox:GetText()
-        if text == "" then             
+        if text == "" then
             ninjaEditBox:SetText(ESNinjaDB.customNinjaText)
-            return 
+            return
         end
         ESNinjaDB.customNinjaText = text
         ninjaEditBox:SetText(text)
@@ -364,7 +364,7 @@ function frame:InitializeOptions()
         ninjaEditBox:SetText("")
     end)
 
-    InterfaceOptions_AddCategory(self.panel)    
+    InterfaceOptions_AddCategory(self.panel)
 
     if not EarthshakerNinjasData.ESN_DATA_SHITLIST then
         shitlist = {};
