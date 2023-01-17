@@ -1,28 +1,111 @@
 local debug = false
 local frame = CreateFrame("Frame")
-local ninjaText = "NINJA"
 local ninjaAlertMsg = "ES Ninja Warning: '$shitter$' is in this group."
 local alertedFor = {}
 local shitlist = {}
 local _, EarthshakerNinjasData = ...
-function Log(text)
-    if debug then print("DEBUG " .. date('%T') .. ": " .. text) end
-end
-
 frame.defaults = {
     soundEnabled = true,
     alertsEnabled = true,
     nameplatesEnabled = true,
     tooltipEnabled = true,
+    customNinjaText = "NINJA",
     defaultShitlist = {},
     customShitlist,
 }
 
+--#region Base64
+-- http://lua-users.org/wiki/BaseSixtyFour
+
+local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+-- encoding
+function ToBase64(data)
+    data = table.concat(data, "|")
+    return ((data:gsub('.', function(x)
+        local r, b = '', x:byte()
+        for i = 8, 1, -1 do r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and '1' or '0') end
+        return r;
+    end) .. '0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c = 0
+        for i = 1, 6 do c = c + (x:sub(i, i) == '1' and 2 ^ (6 - i) or 0) end
+        return b:sub(c + 1, c + 1)
+    end) .. ({ '', '==', '=' })[#data % 3 + 1])
+end
+
+-- decoding
+function FromBase64(data)
+    data = string.gsub(data, '[^' .. b .. '=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r, f = '', (b:find(x) - 1)
+        for i = 6, 1, -1 do r = r .. (f % 2 ^ i - f % 2 ^ (i - 1) > 0 and '1' or '0') end
+        return r:gsub("%z", ""):gsub("|", "\n");
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c = 0
+        for i = 1, 8 do c = c + (x:sub(i, i) == '1' and 2 ^ (8 - i) or 0) end
+        return string.char(c):gsub("%z", ""):gsub("|", "\n")
+    end))
+end
+
+--#endregion
+
+--#region Helpers
+
+function Log(text)
+    if debug then print("DEBUG " .. date('%T') .. ": " .. text) end
+end
+
+function TableIsEmptyOrContainsOnlyNewlines(table)
+    for i, v in ipairs(table) do
+        if v ~= "\n" then -- check if current value is not a newline
+            return false
+        end
+    end
+end
+
+function RemoveDuplicatesFromTable(tab)
+    local hash = {}
+    local res = {}
+    for _, v in ipairs(tab) do
+        if (not hash[v]) then
+            res[#res + 1] = v
+            hash[v] = true
+        end
+    end
+    return res
+end
+
+--#endregion
+
+--#region Import/Export
+
+function ExportCustomShitlist()
+    if ESNinjaDB.customShitlist == {} or TableIsEmptyOrContainsOnlyNewlines(ESNinjaDB.customShitlist) then
+        message("Nothing to be exported, custom list is empty or contains only newlines.")
+        return nil
+    end
+    return ToBase64(ESNinjaDB.customShitlist)
+end
+
+function ImportCustomShitlist(data)
+    if data == "" then return end
+    data = FromBase64(data)
+    data = data .. "\n" .. table.concat(ESNinjaDB.customShitlist, "\n")
+    ModifyCustomShitlist(data)
+end
+
+--#endregion
+
+
 -- https://www.wowinterface.com/forums/showthread.php?t=55498
 -- ketho is a fucking chad ngl
-function KethoEditBox_Show(text, label)
-    if not KethoEditBox then
-        local f = CreateFrame("Frame", "KethoEditBox", UIParent, "DialogBoxFrame")
+function KethoEditBox_Show(text, label, OnHide, frameName)
+    local fName = frameName .. "EditBox"
+    if not _G[fName] then
+        local f = CreateFrame("Frame", fName, UIParent, "DialogBoxFrame")
         f:SetPoint("CENTER")
         f:SetSize(600, 500)
 
@@ -45,14 +128,14 @@ function KethoEditBox_Show(text, label)
         f:SetScript("OnMouseUp", f.StopMovingOrSizing)
 
         -- ScrollFrame
-        local sf = CreateFrame("ScrollFrame", "KethoEditBoxScrollFrame", KethoEditBox, "UIPanelScrollFrameTemplate")
+        local sf = CreateFrame("ScrollFrame", (fName .. "ScrollFrame"), _G[fName], "UIPanelScrollFrameTemplate")
         sf:SetPoint("LEFT", 16, 0)
         sf:SetPoint("RIGHT", -32, 0)
         sf:SetPoint("TOP", 0, -16)
-        sf:SetPoint("BOTTOM", KethoEditBoxButton, "TOP", 0, 0)
+        sf:SetPoint("BOTTOM", _G[(fName .. "Button")], "TOP", 0, 0)
 
         -- EditBox
-        local eb = CreateFrame("EditBox", "KethoEditBoxEditBox", KethoEditBoxScrollFrame)
+        local eb = CreateFrame("EditBox", (fName .. "EditBox"), _G[(fName .. "ScrollFrame")])
         eb:SetSize(sf:GetSize())
         eb:SetMultiLine(true)
         eb:SetAutoFocus(true) -- dont automatically focus
@@ -60,15 +143,17 @@ function KethoEditBox_Show(text, label)
         eb:SetScript("OnEscapePressed", function() f:Hide() end)
         sf:SetScrollChild(eb)
 
-        f:SetScript("OnHide", function()
-            ModifyCustomShitlist(_G["KethoEditBoxEditBox"]:GetText())
-        end)
+        if OnHide then
+            f:SetScript("OnHide", function()
+                OnHide(_G[(fName .. "EditBox")]:GetText())
+            end)
+        end
 
         -- Resizable
         f:SetResizable(true)
         f:SetMinResize(150, 100)
 
-        local rb = CreateFrame("Button", "KethoEditBoxResizeButton", KethoEditBox)
+        local rb = CreateFrame("Button", (fName .. "ResizeButton"), _G[fName])
         rb:SetPoint("BOTTOMRIGHT", -6, 7)
         rb:SetSize(16, 16)
 
@@ -97,9 +182,9 @@ function KethoEditBox_Show(text, label)
         f:Show()
     end
     if text then
-        KethoEditBoxEditBox:SetText(text)
+        _G[(fName .. "EditBox")]:SetText(text)
     end
-    KethoEditBox:Show()
+    _G[fName]:Show()
 end
 
 function TableConcat(t1, t2)
@@ -130,8 +215,39 @@ function ModifyCustomShitlist(names)
         end
     end
 
+    splitNames = RemoveDuplicatesFromTable(splitNames)
+
     if table.getn(splitNames) > 0 then
-        ESNinjaDB.customShitlist = splitNames
+        -- chatGPT saving me so much time its insane kekw
+
+        local concatenated_list = {}
+        for i, v in ipairs(splitNames) do
+            v = string.gsub(string.lower(v), "^%l", string.upper)
+            table.insert(concatenated_list, v)
+        end
+        for i, v in ipairs(shitlist) do
+            v = string.gsub(string.lower(v), "^%l", string.upper)
+            table.insert(concatenated_list, v)
+        end
+        -- Create an empty table to store unique elements
+        local unique_list = {}
+
+        -- Iterate through the concatenated list and add unique elements to the unique table
+        for _, value in ipairs(concatenated_list) do
+            if not unique_list[value] and not ESNinjaDB.customShitlist[value] then
+                table.insert(unique_list, value)
+            end
+        end
+        local t = {}
+        for _, value in ipairs(unique_list) do
+            if not tablefind(shitlist, value) then
+                value = string.gsub(string.lower(value), "^%l", string.upper)
+                table.insert(t, value)
+            end
+        end
+        ESNinjaDB.customShitlist = t
+    else
+        ESNinjaDB.customShitlist = {}
     end
 end
 
@@ -143,7 +259,9 @@ function frame:InitializeOptions()
     if not ESNinjaDB.customShitlist and not ESNinjaDB.customShitlist == {} then
         ESNinjaDB.customShitlist = self.defaults.customShitlist
     end
-
+    if ESNinjaDB.customNinjaText == "" or ESNinjaDB.customNinjaText == nil then
+        ESNinjaDB.customNinjaText = self.defaults.customNinjaText
+    end
 
     local soundCb = CreateFrame("CheckButton", nil, self.panel, "InterfaceOptionsCheckButtonTemplate")
     soundCb:SetPoint("TOPLEFT", 20, -20)
@@ -152,7 +270,6 @@ function frame:InitializeOptions()
         ESNinjaDB.soundEnabled = not ESNinjaDB.soundEnabled
     end)
     soundCb:SetChecked(ESNinjaDB.soundEnabled) -- set the initial checked state
-
 
     local textAlertCb = CreateFrame("CheckButton", nil, self.panel, "InterfaceOptionsCheckButtonTemplate")
     textAlertCb:SetPoint("TOPLEFT", 20, -60)
@@ -178,15 +295,77 @@ function frame:InitializeOptions()
     end)
     tooltipCb:SetChecked(ESNinjaDB.tooltipEnabled) -- set the initial checked state
 
-    local shitlistEditBoxBtn = CreateFrame("Button", nil, self.panel, "UIPanelButtonTemplate")
-    shitlistEditBoxBtn:SetPoint("TOPLEFT", 20, -180)
-    shitlistEditBoxBtn:SetText("Edit custom ninja list")
-    shitlistEditBoxBtn:SetSize(150, 35)
-    shitlistEditBoxBtn:SetScript("OnClick", function()
-        KethoEditBox_Show(GetNamesForEditShitlistText(), "Enter one name per line")
+    local ninjaEditBoxBtn = CreateFrame("Button", nil, self.panel, "UIPanelButtonTemplate")
+    ninjaEditBoxBtn:SetPoint("TOPLEFT", 20, -180)
+    ninjaEditBoxBtn:SetText("Edit custom ninja list")
+    ninjaEditBoxBtn:SetSize(150, 35)
+    ninjaEditBoxBtn:SetScript("OnClick", function()
+        KethoEditBox_Show(GetNamesForEditShitlistText(), "Enter one name per line", ModifyCustomShitlist, "edit")
     end)
 
-    InterfaceOptions_AddCategory(self.panel)
+    local exportShitlistEditBtn = CreateFrame("Button", nil, self.panel, "UIPanelButtonTemplate")
+    exportShitlistEditBtn:SetPoint("TOPLEFT", 180, -180)
+    exportShitlistEditBtn:SetText("Export")
+    exportShitlistEditBtn:SetSize(150, 35)
+    exportShitlistEditBtn:SetScript("OnClick", function()
+        KethoEditBox_Show(ExportCustomShitlist(), "", nil, "export")
+    end)
+
+    local importShitlistEditBtn = CreateFrame("Button", nil, self.panel, "UIPanelButtonTemplate")
+    importShitlistEditBtn:SetPoint("TOPLEFT", 340, -180)
+    importShitlistEditBtn:SetText("Import")
+    importShitlistEditBtn:SetSize(150, 35)
+    importShitlistEditBtn:SetScript("OnClick", function()
+        KethoEditBox_Show("", "Paste exported data and click 'OK' (and pray that it works)", ImportCustomShitlist,
+            "import")
+    end)
+
+
+    local ninjaEditBox = CreateFrame("EditBox", "NinjaEditBox", self.panel, "BackdropTemplate")
+    ninjaEditBox:SetSize(150, 20)
+    ninjaEditBox:SetPoint("TOPLEFT", 20, -240)
+
+    ninjaEditBox:SetMultiLine(false)
+    ninjaEditBox:SetAutoFocus(false) -- dont automatically focus
+
+    ninjaEditBox:SetFontObject("ChatFontNormal")
+    ninjaEditBox:SetTextInsets(10, 0, 0, 0)
+
+    ninjaEditBox:SetBackdrop({
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", -- this one is neat
+        tile = false,
+        tileSize = 20,
+        edgeSize = 10,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    ninjaEditBox:SetBackdropBorderColor(1, 1, 1, 1) -- darkblue
+
+    ninjaEditBox.Label = ninjaEditBox:CreateFontString(nil, "BORDER", "GameFontNormal")
+    ninjaEditBox.Label:SetJustifyH("RIGHT")
+    ninjaEditBox.Label:SetPoint("TOPLEFT", 3, 13)
+    ninjaEditBox.Label:SetText("Custom Ninja text")
+    
+    ninjaEditBox:SetScript("OnEnterPressed", function()
+        ninjaEditBox:ClearFocus()
+        local text = ninjaEditBox:GetText()
+        if text == "" then             
+            ninjaEditBox:SetText(ESNinjaDB.customNinjaText)
+            return 
+        end
+        ESNinjaDB.customNinjaText = text
+        ninjaEditBox:SetText(text)
+    end)
+    ninjaEditBox:SetScript("OnEscapePressed", function()
+        ninjaEditBox:ClearFocus()
+        ninjaEditBox:SetText(ESNinjaDB.customNinjaText)
+    end)
+    ninjaEditBox:SetScript("OnEditFocusGained", function()
+        ninjaEditBox:SetText("")
+    end)
+
+    InterfaceOptions_AddCategory(self.panel)    
+
     if not EarthshakerNinjasData.ESN_DATA_SHITLIST then
         shitlist = {};
     else
@@ -199,7 +378,7 @@ function OnTooltipSetUnit(unit)
     if not ESNinjaDB.tooltipEnabled then return end
     local _, u = unit:GetUnit()
     if isInAnyShitlist(u) then
-        GameTooltip:AddLine(ninjaText, 1, 0, 0)
+        GameTooltip:AddLine(ESNinjaDB.customNinjaText, 1, 0, 0)
         GameTooltip:Show()
     end
 end
@@ -226,7 +405,7 @@ function createFrameForNameplate(nameplate)
         nameplate.frame.text = nameplate.frame:CreateFontString(nil, "ARTWORK")
         nameplate.frame.text:SetFont("Fonts\\ARIALN.ttf", 13, "OUTLINE")
         nameplate.frame.text:SetPoint("CENTER", 0, 0)
-        nameplate.frame.text:SetText(ninjaText)
+        nameplate.frame.text:SetText(ESNinjaDB.customNinjaText)
         nameplate.frame.text:SetTextColor(1, 0, 0)
     end
     nameplate.frame:Show()
@@ -308,6 +487,7 @@ end)
 
 function OpenSettings(msg, editBox)
     InterfaceOptionsFrame_Show()
+    _G["NinjaEditBox"]:SetText(ESNinjaDB.customNinjaText)
     InterfaceOptionsFrame_OpenToCategory("ES Ninjas")
 end
 
