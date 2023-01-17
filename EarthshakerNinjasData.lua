@@ -1,1 +1,1 @@
-local _, addon=...;addon.ESN_DATA_SHITLIST = { "Hororr" };
+local _, addon=...;addon.ESN_DATA_SHITLIST = { "Hororr" ,"Buitenlander"};
